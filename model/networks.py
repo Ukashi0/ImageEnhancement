@@ -130,7 +130,7 @@ class PerceptualLoss(nn.Module):
         return torch.mean((self.instancenorm(img_fea) - self.instancenorm(target_fea)) ** 2)
 
 
-# D
+# Discriminator
 class NoNormDiscriminator(nn.Module):
     def __init__(self, input_nc, ndf=64, n_layers=3, use_sigmoid=False, gpu_ids=[]):
         super(NoNormDiscriminator, self).__init__()
