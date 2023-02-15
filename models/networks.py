@@ -18,6 +18,15 @@ def get_norm_layer(norm_type):
     return norm_layer
 
 
+def print_network(net):
+    num = 0
+    for param in net.parameters():
+        num += param.numel()
+
+    print(net)
+    print('Total number of parameters: %d' % num)
+
+
 def weights_init(m):
     classname = m.__class__.__name__
     if classname.find('Conv') != -1:

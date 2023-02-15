@@ -98,7 +98,6 @@ class GanModel(BaseModel):
         self.input_img.resize_(input_img.size()).copy_(input_img)
         self.image_paths = input['A_paths' if AtoB else 'B_paths']
 
-
     def test(self):
         self.realA = Variable(self.inputA, volatitle=True)
         if self.opt.noise > 0:

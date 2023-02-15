@@ -80,8 +80,8 @@ class BaseOptions():
         self.parser.add_argument('--linear_add', action='store_true', help='lieanr scaling input')
         self.parser.add_argument('--latent_threshold', action='store_true', help='lieanr scaling input')
         self.parser.add_argument('--latent_norm', action='store_true', help='lieanr scaling input')
-        self.parser.add_argument('--patchD', action='store_true', help='use patch discriminator')
-        self.parser.add_argument('--patchD_3', type=int, default=0,
+        self.parser.add_argument('--patchD', default=1, help='use patch discriminator')
+        self.parser.add_argument('--patchD_3', type=int, default=1,
                                  help='choose the number of crop for patch discriminator')
         self.parser.add_argument('--D_P_times2', action='store_true', help='loss_D_P *= 2')
         self.parser.add_argument('--patch_vgg', action='store_true', help='use vgg loss between each patch')
