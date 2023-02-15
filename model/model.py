@@ -15,7 +15,6 @@ class Model(BaseModel):
     def name(self):
         return 'model'
 
-
     def initialize(self, opt):
         BaseModel.initialize(self,opt)
 
@@ -168,6 +167,122 @@ class Model(BaseModel):
         self.lossG_A = (self.criterionGAN(pred_fake - torch.mean(pred_fake), False) +
                         (self.criterionGAN(pred_fake) - torch.mean(pred_real),True))/2
         loss = 0
+        if self.opt.patchD:
+            pred_fake_patch = self.netD_P.forward(self.fake_patch)
+            pred_real_patch = self.netD_P.forward(self.real_patch)
+            loss += (self.criterionGAN(pred_fake_patch - torch.mean(pred_fake_patch),False)+
+                     self.criterionGAN(pred_real_patch - torch.mean(pred_real_patch),True)) / 2
+
+        if self.opt.patchD_3>0:
+            for i,data in self.fake_patch_1:
+                pred_fake_patch1 = self.netD_P.forward(data)
+                pred_real_patch1 = self.netD_P.forward(data)
+                loss += ((self.criterionGAN(pred_fake_patch1) - torch.mean(pred_fake_patch1), True)+
+                self.criterionGAN(pred_real_patch1 - torch.mean(pred_real_patch1), False) ) / 2
+
+            self.lossG_A += loss/float(self.opt.patchD_3 + 1)
+        # vgg loss
+        vgg_w = 1.0
+        self.loss_vgg_b = self.vgg_loss.compute_vgg_loss(self.vgg,self.fakeB,self.realA)* self.opt.vgg
+        vgg_loss = 0
+        vgg_loss += self.vgg_loss.compute(self.vgg, self.fake_patch,self.input_patch)* self.opt.vgg
+
+        if self.opt.patchD_3>0:
+            for i in range(self.vgg):
+                vgg_loss += self.vgg_loss.compute((self.vgg,self.fake_patch1[i],self.input_patch1[i]))* self.opt.vgg
+
+        self.loss_vgg_b += loss / float(self.opt.patchSize+1)
+
+        self.lossG = self.lossG_A + self.loss_vgg_b*vgg_w
+        self.loss_G.backward()
+
+
+    def forward(self):
+        self.realA = Variable(self.inputA)
+        self.realB = Variable(self.inputB)
+        self.realImg = Variable(self.input_img)
+
+        self.fakeB, self.latentRealA = self.netG_A.forward(self.real_img)
+        #
+        w = self.realA.size(3)
+        h = self.realA.size(2)
+        w_offset = random.randint(0, max(0, w-self.patchSize - 1))
+        h_offset = random.randint(0, max(0, h-self.opt.patchSize -1))
+        self.fake_patch = self.fakeB[:,:,h_offset:h_offset+self.opt.patchSize, w_offset:w_offset+self.opt.patchSize]
+        self.real_patch = self.realB[:,:,h_offset:h_offset+self.opt.patchSize, w_offset:w_offset+self.opt.patchSize]
+        self.input_patch = self.realA[:,:,h_offset:h_offset+self.opt.patchSize, w_offset:w_offset+self.opt.patchSize]
+
+        if self.opt.patchD_3>0:
+            self.fake_patch1 = []
+            self.real_patch1 = []
+            self.input_patch1 = []
+
+            w = self.realA.size(3)
+            h = self.realA.size(2)
+
+            for i in range(self.opt.patchD_3):
+                w_offset1 = random.randint(0, max(0,w - self.opt.patchSize - 1))
+                h_offset1 = random.randint(0, max(0,h - self.opt.patchSize - 1))
+
+                self.fake_patch1.append(self.fakeB[:,:,h_offset1:h_offset1+self.opt.patchSize,
+                                        w_offset1:w_offset1+self.opt.patchSize])
+                self.real_patch1.append(self.realB[:,:,h_offset1:h_offset1+self.opt.patchSize,
+                                        w_offset1:w_offset1+self.opt.patchSize])
+                self.input_patch1.append(self.realA[:,:,h_offset1:h_offset1+self.opt.patchSize,
+                                         w_offset1:w_offset1+self.opt.patchSize])
+
+
+    def optimize_parameter(self,epoch):
+        self.forward()
+        self.optimizer_G.zero_grad()
+        self.backward_G(epoch)
+        self.optimizer_G.step()
+
+        self.optimizer_D_A.zero_grad()
+        self.backward_D_A(epoch)
+        self.optimizer_D_P.zero_grad()
+        self.backward_D_P(epoch)
+        self.optimizer_D_A.step()
+        self.optimizer_D_P.step()
+
+
+    def get_current_error(self,epoch):
+        D_A = self.lossD_A.data[0]
+        D_P = self.lossD_P.data[0]
+        G_A = self.lossG_A.data[0]
+
+        vgg = self.loss_vgg_b.data[0]/self.opt.vgg
+        return OrderedDict([('D_A',D_A),('D_P',D_P),('G_A',G_A),('vgg',vgg)])
+
+    def save(self,label):
+        self.save_net(self.netG_A,'G_A',label, self.gpu_id)
+        self.save_net(self.netD_P,'D_P',label, self.gpu_id)
+        self.save_net(self.netD_P,'D_P',label, self.gpu_id)
+
+    def update_lr(self):
+        if self.opt.new_lf:
+            lr = self.old_lr / 2
+        else:
+            lrd = self.opt.lr / self.opt.niter_decay
+            lr = self.old_lr - lrd
+        for item in self.optimizer_D_A.param_groups:
+            item['lr'] = lr
+        for item in self.optimizer_D_P.param_groups:
+            item['lr'] = lr
+        for item in self.optimizer_G.param_groups:
+            item['lr'] = lr
+
+        print('update learning rate: %f -> %f' %(self.old_lr, lr))
+        self.old_lr = lr
+
+
+
+
+
+
+
+
+
 
 
 
