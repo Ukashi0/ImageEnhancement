@@ -13,3 +13,15 @@ def tensor2im(img_tensor,type=np.uint8):
     img_np = np.maximum(img_np,0)
     img_np = np.minimum(img_np,255)
     return  img_np.astype(type)
+
+def mkdirs(paths):
+    if isinstance(paths, list) and not isinstance(paths, str):
+        for path in paths:
+            mkdir(path)
+    else:
+        mkdir(paths)
+
+
+def mkdir(path):
+    if not os.path.exists(path):
+        os.makedirs(path)

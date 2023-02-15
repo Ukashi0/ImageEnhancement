@@ -5,7 +5,7 @@ import torch.nn as nn
 import functools
 import torch.nn.functional as F
 from torch.autograd import Variable
-from lib.nn import SynchronizedBatchNorm2d as SynBN2d
+# from lib.nn import SynchronizedBatchNorm2d as SynBN2d
 
 
 def get_norm_layer(norm_type):
@@ -13,10 +13,8 @@ def get_norm_layer(norm_type):
         norm_layer = functools.partial(nn.BatchNorm2d, affine=True)
     elif norm_type == 'instance':
         norm_layer = functools.partial(nn.InstanceNorm2d, affine=False)
-    elif norm_type == 'synBN':
-        norm_layer = functools.partial(SynBN2d, affine=True)
     else:
-        raise NotImplementedError('normalization layer [%s] is not found' % norm)
+        raise NotImplementedError('normalization layer [%s] is not found' % norm_type)
     return norm_layer
 
 
@@ -112,6 +110,92 @@ def pad_tensor(input):
 
     return input, pad_left, pad_right, pad_top, pad_bottom
 
+def load_vgg16(model_dir, gpu_ids):
+    """ Use the model from https://github.com/abhiskk/fast-neural-style/blob/master/neural_style/utils.py """
+    if not os.path.exists(model_dir):
+        os.mkdir(model_dir)
+    vgg = Vgg16()
+    vgg.cuda()
+    vgg.cuda(device=gpu_ids[0])
+    vgg.load_state_dict(torch.load(os.path.join(model_dir, 'vgg16.weight')))
+    vgg = torch.nn.DataParallel(vgg, gpu_ids)
+    return vgg
+
+
+class Vgg16(nn.Module):
+    def __init__(self):
+        super(Vgg16, self).__init__()
+        self.conv1_1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1)
+        self.conv1_2 = nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1)
+
+        self.conv2_1 = nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1)
+        self.conv2_2 = nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1)
+
+        self.conv3_1 = nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=1)
+        self.conv3_2 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1)
+        self.conv3_3 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1)
+
+        self.conv4_1 = nn.Conv2d(256, 512, kernel_size=3, stride=1, padding=1)
+        self.conv4_2 = nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1)
+        self.conv4_3 = nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1)
+
+        self.conv5_1 = nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1)
+        self.conv5_2 = nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1)
+        self.conv5_3 = nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1)
+
+    def forward(self, X, opt):
+        h = F.relu(self.conv1_1(X), inplace=True)
+        h = F.relu(self.conv1_2(h), inplace=True)
+        # relu1_2 = h
+        h = F.max_pool2d(h, kernel_size=2, stride=2)
+
+        h = F.relu(self.conv2_1(h), inplace=True)
+        h = F.relu(self.conv2_2(h), inplace=True)
+        # relu2_2 = h
+        h = F.max_pool2d(h, kernel_size=2, stride=2)
+
+        h = F.relu(self.conv3_1(h), inplace=True)
+        h = F.relu(self.conv3_2(h), inplace=True)
+        h = F.relu(self.conv3_3(h), inplace=True)
+        # relu3_3 = h
+        if opt.vgg_choose != "no_maxpool":
+            h = F.max_pool2d(h, kernel_size=2, stride=2)
+
+        h = F.relu(self.conv4_1(h), inplace=True)
+        relu4_1 = h
+        h = F.relu(self.conv4_2(h), inplace=True)
+        relu4_2 = h
+        conv4_3 = self.conv4_3(h)
+        h = F.relu(conv4_3, inplace=True)
+        relu4_3 = h
+
+        if opt.vgg_choose != "no_maxpool":
+            if opt.vgg_maxpooling:
+                h = F.max_pool2d(h, kernel_size=2, stride=2)
+
+        relu5_1 = F.relu(self.conv5_1(h), inplace=True)
+        relu5_2 = F.relu(self.conv5_2(relu5_1), inplace=True)
+        conv5_3 = self.conv5_3(relu5_2)
+        h = F.relu(conv5_3, inplace=True)
+        relu5_3 = h
+        if opt.vgg_choose == "conv4_3":
+            return conv4_3
+        elif opt.vgg_choose == "relu4_2":
+            return relu4_2
+        elif opt.vgg_choose == "relu4_1":
+            return relu4_1
+        elif opt.vgg_choose == "relu4_3":
+            return relu4_3
+        elif opt.vgg_choose == "conv5_3":
+            return conv5_3
+        elif opt.vgg_choose == "relu5_1":
+            return relu5_1
+        elif opt.vgg_choose == "relu5_2":
+            return relu5_2
+        elif opt.vgg_choose == "relu5_3" or "maxpool":
+            return relu5_3
+
+
 class PerceptualLoss(nn.Module):
     def __init__(self, opt):
         super(PerceptualLoss, self).__init__()
@@ -128,6 +212,49 @@ class PerceptualLoss(nn.Module):
 
         # normalize
         return torch.mean((self.instancenorm(img_fea) - self.instancenorm(target_fea)) ** 2)
+
+class GANLoss(nn.Module):
+    def __init__(self, use_lsgan=True, target_real=1.0, target_fake=0.0, tensor=torch.FloatTensor):
+        super(GANLoss, self).__init__()
+        self.real_label = target_real
+        self.fake_label
+
+
+class GANLoss(nn.Module):
+    def __init__(self, use_lsgan=True, target_real_label=1.0, target_fake_label=0.0,
+                 tensor=torch.FloatTensor):
+        super(GANLoss, self).__init__()
+        self.real_label = target_real_label
+        self.fake_label = target_fake_label
+        self.real_label_var = None
+        self.fake_label_var = None
+        self.Tensor = tensor
+        if use_lsgan:
+            self.loss = nn.MSELoss() # 当前输入的结果与还原的结果，的相似度
+        else:
+            self.loss = nn.BCELoss() #
+
+    def get_target_tensor(self, input, target_is_real):
+        target_tensor = None
+        if target_is_real:
+            create_label = ((self.real_label_var is None) or
+                            (self.real_label_var.numel() != input.numel()))
+            if create_label:
+                real_tensor = self.Tensor(input.size()).fill_(self.real_label)
+                self.real_label_var = Variable(real_tensor, requires_grad=False)
+            target_tensor = self.real_label_var
+        else:
+            create_label = ((self.fake_label_var is None) or
+                            (self.fake_label_var.numel() != input.numel()))
+            if create_label:
+                fake_tensor = self.Tensor(input.size()).fill_(self.fake_label)
+                self.fake_label_var = Variable(fake_tensor, requires_grad=False)
+            target_tensor = self.fake_label_var
+        return target_tensor
+
+    def __call__(self, input, target_is_real):
+        target_tensor = self.get_target_tensor(input, target_is_real)
+        return self.loss(input, target_tensor)
 
 
 # Discriminator

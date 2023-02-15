@@ -1,26 +1,24 @@
 import numpy as np
-
 import torch
-
 from collections import OrderedDict
 from torch.autograd import Variable
 import  random
 import  sys
-from baseModel import BaseModel
+from .baseModel import BaseModel
 from . import networks
 from util.imagePool import ImagePool
 import util.utils as util
 
 class GanModel(BaseModel):
     def name(self):
-        return 'model'
+        return 'GanModel'
 
     def initialize(self, opt):
         BaseModel.initialize(self,opt)
 
         self.opt = opt
-        nb = opt.batchSize
-        size = opt.fineSize
+        nb = opt.batchsize
+        size = opt.finesize
 
         self.opt = opt
         # 初始化输入空间
@@ -34,25 +32,25 @@ class GanModel(BaseModel):
             self.vgg_patch_loss = networks.PerceptualLoss(opt)
             self.vgg_patch_loss.cuda()
         self.vgg_loss.cuda()
-        self.vgg = networks.load_vgg16("./vggModel",self.gpu_id)
+        self.vgg = networks.load_vgg16("./models/",self.gpu_id)
         self.vgg.eval()
         for i in self.vgg.parameters():
             i.requires_grad = False
 
         skip = True if opt.skip > 0 else False
         self.netG_A = networks.define_G(opt.input_nc, opt.output_nc,
-                                        opt.ngf, opt.which_model_netG, opt.norm, not opt.no_dropout, self.gpu_ids,
+                                        opt.ngf, opt.which_model_netG, opt.norm, not opt.no_dropout, self.gpu_id,
                                         skip=skip, opt=opt)
         # 鉴别器
         if self.isTrain:
             use_sigmoid = opt.no_lsgan
             self.netD_A = networks.define_D(opt.output_nc, opt.ndf,
                                             opt.which_model_netD,
-                                            opt.n_layers_D, opt.norm, use_sigmoid, self.gpu_ids, False)
+                                            opt.n_layers_D, opt.norm, use_sigmoid, self.gpu_id, False)
             if self.opt.patchD:
                 self.netD_P = networks.define_D(opt.input_nc, opt.ndf,
                                                 opt.which_model_netD,
-                                                opt.n_layers_patchD, opt.norm, use_sigmoid, self.gpu_ids, True)
+                                                opt.n_layers_patchD, opt.norm, use_sigmoid, self.gpu_id, True)
         if not self.isTrain or opt.continue_train:
             which_epoch = opt.which_epoch
             self.load_network(self.netG_A, 'G_A', which_epoch)

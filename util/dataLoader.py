@@ -5,7 +5,7 @@ import torch.utils.data as data
 from PIL import Image
 import torchvision.transforms as transforms
 import random
-import imageFolder
+import util.imageFolder as imageFolder
 
 class BaseDataLoader():
     def __init__(self):
@@ -36,12 +36,11 @@ class dataLoader(BaseDataLoader):
     def initialize(self, opt):
         BaseDataLoader.initialize(self, opt)
         self.dataset = CreateDataset(opt)
-        # 主要是对数据进行batch的划分
         self.dataloader = torch.utils.data.DataLoader(
             self.dataset,   # torch TensorDataset format
-            batch_size=opt.batchSize,   # mini batch size
+            batch_size=opt.batchsize,   # mini batch size
             shuffle=not opt.serial_batches,   # 是否打乱数据
-            num_workers=int(opt.nThreads))  # # 多线程来读数据
+            num_workers=int(opt.nThreads))  # # 多线程读数据
 
     def load_data(self):
         return self.dataloader
@@ -64,19 +63,19 @@ def CreateDataset(opt):
 def get_transform(opt):
     transform_list = []
     if opt.resize_or_crop == 'resize_and_crop':
-        zoom = 1 + 0.1*radom.randint(0,4)
+        zoom = 1 + 0.1*random.randint(0,4)
         osize = [int(400*zoom), int(600*zoom)]
         transform_list.append(transforms.Scale(osize, Image.BICUBIC))
-        transform_list.append(transforms.RandomCrop(opt.fineSize))
+        transform_list.append(transforms.RandomCrop(opt.finesize))
     elif opt.resize_or_crop == 'crop':
-        transform_list.append(transforms.RandomCrop(opt.fineSize))
+        transform_list.append(transforms.RandomCrop(opt.finesize))
     elif opt.resize_or_crop == 'scale_width':
         transform_list.append(transforms.Lambda(
-            lambda img: __scale_width(img, opt.fineSize)))
+            lambda img: __scale_width(img, opt.finesize)))
     elif opt.resize_or_crop == 'scale_width_and_crop':
         transform_list.append(transforms.Lambda(
             lambda img: __scale_width(img, opt.loadSize)))
-        transform_list.append(transforms.RandomCrop(opt.fineSize))
+        transform_list.append(transforms.RandomCrop(opt.finesize))
     # elif opt.resize_or_crop == 'no':
     #     osize = [384, 512]
     #     transform_list.append(transforms.Scale(osize, Image.BICUBIC))
@@ -101,8 +100,8 @@ class UnalignedDataset(BaseDataset):
     def initialize(self,opt):
         self.opt = opt
         self.root = opt.dataroot
-        self.dirA = self.path.join(opt.dataroot, opt.phase+'A')
-        self.dirB = self.path.join(opt.dataroot, opt.phase+'B')
+        self.dirA = os.path.join(opt.dataroot, opt.phase+'A')
+        self.dirB = os.path.join(opt.dataroot, opt.phase+'B')
         self.imgA, self.pathA = imageFolder.store_dataset(self.dirA)
         self.imgB, self.pathB = imageFolder.store_dataset(self.dirB)
         self.sizeA = len(self.pathA)
@@ -144,7 +143,7 @@ class UnalignedDataset(BaseDataset):
                 'A_paths': pathA, 'B_paths': pathB}
 
     def __len__(self):
-        return max(self.A_size, self.B_size)
+        return max(self.sizeA, self.sizeB)
 
     def name(self):
         return 'UnalignedDataset'
