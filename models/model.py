@@ -11,7 +11,7 @@ from . import networks
 from util.imagePool import ImagePool
 import util.utils as util
 
-class Model(BaseModel):
+class GanModel(BaseModel):
     def name(self):
         return 'model'
 
