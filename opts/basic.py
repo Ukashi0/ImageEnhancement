@@ -19,9 +19,9 @@ class BaseOptions():
         self.parser.add_argument('--output_nc',type=int,default=3,help='# of output image channels')
         self.parser.add_argument('--ngf',type=int,default=64,help='# of gen filters in first conv layer')
         self.parser.add_argument('--ndf', type=int, default=64, help='# of discrim filters in first conv layer')
-        self.parser.add_argument('--which_model_netD', type=str, default='basic', help='selects model to use for netD')
-        self.parser.add_argument('--which_model_netG', type=str, default='unet_256',
-                                 help='selects model to use for netG')
+        # self.parser.add_argument('--which_model_netD', type=str, default='basic', help='selects model to use for netD')
+        # self.parser.add_argument('--which_model_netG', type=str, default='unet_256',
+        #                          help='selects model to use for netG')
         self.parser.add_argument('--n_layers_D', type=int, default=3, help='only used if which_model_netD==n_layers')
         self.parser.add_argument('--n_layers_patchD', type=int, default=3,
                                  help='only used if which_model_netD==n_layers')
