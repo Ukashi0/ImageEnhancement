@@ -14,7 +14,8 @@ def get_norm_layer(norm_type):
     elif norm_type == 'instance':
         norm_layer = functools.partial(nn.InstanceNorm2d, affine=False)
     else:
-        raise NotImplementedError('normalization layer [%s] is not found' % norm_type)
+        raise NotImplementedError(
+            'normalization layer [%s] is not found' % norm_type)
     return norm_layer
 
 
@@ -43,7 +44,8 @@ def define_D(input_nc, ndf, which_model_netD,
     norm_layer = get_norm_layer(norm_type=norm)
     if use_gpu:
         assert (torch.cuda.is_available())
-    netD = NoNormDiscriminator(input_nc, ndf, n_layers_D, use_sigmoid=use_sigmoid, gpu_ids=gpu_ids)
+    netD = NoNormDiscriminator(
+        input_nc, ndf, n_layers_D, use_sigmoid=use_sigmoid, gpu_ids=gpu_ids)
     if use_gpu:
         netD.cuda(device=gpu_ids[0])
         netD = torch.nn.DataParallel(netD, gpu_ids)
@@ -68,7 +70,6 @@ def define_G(input_nc, output_nc, ngf, which_model_netG, norm='batch', use_dropo
     return netG
 
 
-
 def vgg_preprocess(img, opt):
     tensortype = type(img.data)
     (r, g, b) = torch.chunk(img, 3, dim=1)
@@ -83,13 +84,13 @@ def vgg_preprocess(img, opt):
     return img
 
 
-
 def pad_tensor_back(input, pad_left, pad_right, pad_top, pad_bottom):
     height, width = input.shape[2], input.shape[3]
-    return input[:,:, pad_top: height - pad_bottom, pad_left: width - pad_right]
+    return input[:, :, pad_top: height - pad_bottom, pad_left: width - pad_right]
+
 
 def pad_tensor(input):
-    height,width = input.shape[2], input.shape[3]
+    height, width = input.shape[2], input.shape[3]
     divide = 16
     if width % divide != 0 or height % divide != 0:
         width_res = width % divide
@@ -97,7 +98,7 @@ def pad_tensor(input):
         if width_res != 0:
             width_div = divide - width_res
             pad_left = int(width_div / 2)
-            pad_right = int(width_div -pad_left)
+            pad_right = int(width_div - pad_left)
         else:
             pad_left = 0
             pad_right = 0
@@ -109,7 +110,8 @@ def pad_tensor(input):
             pad_top = 0
             pad_bottom = 0
 
-        padding = nn.ReflectionPad2d((pad_left, pad_right, pad_top, pad_bottom))
+        padding = nn.ReflectionPad2d(
+            (pad_left, pad_right, pad_top, pad_bottom))
         input = padding(input)
     else:
         pad_left = 0
@@ -118,6 +120,7 @@ def pad_tensor(input):
         pad_bottom = 0
 
     return input, pad_left, pad_right, pad_top, pad_bottom
+
 
 def load_vgg16(model_dir, gpu_ids):
     """ Use the model from https://github.com/abhiskk/fast-neural-style/blob/master/neural_style/utils.py """
@@ -223,7 +226,6 @@ class PerceptualLoss(nn.Module):
         return torch.mean((self.instancenorm(img_fea) - self.instancenorm(target_fea)) ** 2)
 
 
-
 class GANLoss(nn.Module):
     def __init__(self, use_lsgan=True, target_real_label=1.0, target_fake_label=0.0,
                  tensor=torch.FloatTensor):
@@ -234,9 +236,9 @@ class GANLoss(nn.Module):
         self.fake_label_var = None
         self.Tensor = tensor
         if use_lsgan:
-            self.loss = nn.MSELoss() # 当前输入的结果与还原的结果，的相似度
+            self.loss = nn.MSELoss()  # 当前输入的结果与还原的结果，的相似度
         else:
-            self.loss = nn.BCELoss() #
+            self.loss = nn.BCELoss()
 
     def get_target_tensor(self, input, target_is_real):
         target_tensor = None
@@ -245,15 +247,17 @@ class GANLoss(nn.Module):
                             (self.real_label_var.numel() != input.numel()))
             if create_label:
                 real_tensor = self.Tensor(input.size()).fill_(self.real_label)
-                self.real_label_var = Variable(real_tensor, requires_grad=False)
+                self.real_label_var = Variable(
+                    real_tensor, requires_grad=False)
             target_tensor = self.real_label_var.cuda()
         else:
             create_label = ((self.fake_label_var is None) or
                             (self.fake_label_var.numel() != input.numel()))
-            if create_label:
+            if create_label:  # self.Tensor(input.size()).fill_(self.fake_label)
                 fake_tensor = self.Tensor(input.size()).fill_(self.fake_label)
-                self.fake_label_var = Variable(fake_tensor, requires_grad=False)
-            target_tensor = self.fake_label_var.cuda()
+                self.fake_label_var = Variable(
+                    fake_tensor, requires_grad=False)
+            target_tensor = self.fake_label_var.cuda()   # ?!!
         return target_tensor
 
     def __call__(self, input, target_is_real):
@@ -293,7 +297,8 @@ class NoNormDiscriminator(nn.Module):
             nn.LeakyReLU(0.2, True)
         ]
 
-        sequence += [nn.Conv2d(ndf * nf_mult, 1, kernel_size=kw, stride=1, padding=padw)]
+        sequence += [nn.Conv2d(ndf * nf_mult, 1,
+                               kernel_size=kw, stride=1, padding=padw)]
 
         if use_sigmoid:
             sequence += [nn.Sigmoid()]
@@ -330,7 +335,8 @@ class ChannelAttentionModule(nn.Module):
 class SpatialAttentionModule(nn.Module):
     def __init__(self):
         super(SpatialAttentionModule, self).__init__()
-        self.conv2d = nn.Conv2d(in_channels=2, out_channels=1, kernel_size=7, stride=1, padding=3)
+        self.conv2d = nn.Conv2d(
+            in_channels=2, out_channels=1, kernel_size=7, stride=1, padding=3)
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
@@ -361,7 +367,7 @@ class conv_block(nn.Module):
             nn.Conv2d(ch_in, ch_out, 3, padding=1),
             nn.LeakyReLU(0.2, inplace=True),
             nn.BatchNorm2d(ch_out),
-            nn.Conv2d(ch_out,ch_out,3,padding=1),
+            nn.Conv2d(ch_out, ch_out, 3, padding=1),
             nn.LeakyReLU(0.2, inplace=True),
             nn.BatchNorm2d(ch_out),
         )
@@ -387,6 +393,7 @@ class up_conv(nn.Module):
         x = self.up(x)
         return x
 
+
 class Unet_resize_conv(nn.Module):
     def __init__(self, opt, skip):
         super(Unet_resize_conv, self).__init__()
@@ -403,24 +410,23 @@ class Unet_resize_conv(nn.Module):
             self.cbam4 = CBAM(channel=256)
             self.cbam5 = CBAM(channel=512)
 
-        self.conv1 = conv_block(ch_in=3,ch_out=32)
-        self.conv2 = conv_block(ch_in=32,ch_out=64)
-        self.conv3 = conv_block(ch_in=64,ch_out=128)
-        self.conv4 = conv_block(ch_in=128,ch_out=256)
-        self.conv5 = up_conv(ch_in=256,ch_out=512)
+        self.conv1 = conv_block(ch_in=3, ch_out=32)
+        self.conv2 = conv_block(ch_in=32, ch_out=64)
+        self.conv3 = conv_block(ch_in=64, ch_out=128)
+        self.conv4 = conv_block(ch_in=128, ch_out=256)
+        self.conv5 = up_conv(ch_in=256, ch_out=512)
         self.deconv5 = nn.Conv2d(512, 256, 3, padding=1)  #
-        self.conv6 = up_conv(ch_in=512,ch_out=256)
-        self.deconv6 = nn.Conv2d(256,128,3,padding=1)
-        self.conv7 = up_conv(ch_in=256,ch_out=128)
-        self.deconv7 = nn.Conv2d(128,64,3,padding=1)
-        self.conv8 = up_conv(ch_in=128,ch_out=64)
-        self.deconv8 = nn.Conv2d(64,32,3,padding=1)
-        self.conv9 = up_conv(ch_in=64,ch_out=32)
+        self.conv6 = up_conv(ch_in=512, ch_out=256)
+        self.deconv6 = nn.Conv2d(256, 128, 3, padding=1)
+        self.conv7 = up_conv(ch_in=256, ch_out=128)
+        self.deconv7 = nn.Conv2d(128, 64, 3, padding=1)
+        self.conv8 = up_conv(ch_in=128, ch_out=64)
+        self.deconv8 = nn.Conv2d(64, 32, 3, padding=1)
+        self.conv9 = up_conv(ch_in=64, ch_out=32)
 
-        self.conv10 = nn.Conv2d(32,3,1)
+        self.conv10 = nn.Conv2d(32, 3, 1)
         if self.opt.tanh:
             self.tanh = nn.Tanh()
-
 
     def depth_to_space(self, input, block_size):
         block_size_sq = block_size * block_size
@@ -429,15 +435,17 @@ class Unet_resize_conv(nn.Module):
         s_depth = int(d_depth / block_size_sq)
         s_width = int(d_width * block_size)
         s_height = int(d_height * block_size)
-        t_1 = output.resize(batch_size, d_height, d_width, block_size_sq, s_depth)
+        t_1 = output.resize(batch_size, d_height, d_width,
+                            block_size_sq, s_depth)
         spl = t_1.split(block_size, 3)
-        stack = [t_t.resize(batch_size, d_height, s_width, s_depth) for t_t in spl]
+        stack = [t_t.resize(batch_size, d_height, s_width, s_depth)
+                 for t_t in spl]
         output = torch.stack(stack, 0).transpose(0, 1).permute(0, 2, 1, 3, 4).resize(batch_size, s_height, s_width,
                                                                                      s_depth)
         output = output.permute(0, 3, 1, 2)
         return output
 
-    def forward(self, input, gray):
+    def forward(self, input):
         flag = 0
         if input.size()[3] > 2200:
             avg = nn.AvgPool2d(2)
@@ -464,20 +472,20 @@ class Unet_resize_conv(nn.Module):
         x5 = self.Maxpool(conv4)
         x5 = self.conv5(x5)
 
-        d5 = F.upsample(x5, scale_factor=2,mode='bilinear')
-        d6 = torch.cat([self.deconv5(d5),conv4],1)
-        d6  = self.conv6(d6)
+        d5 = F.upsample(x5, scale_factor=2, mode='bilinear')
+        d6 = torch.cat([self.deconv5(d5), conv4], 1)
+        d6 = self.conv6(d6)
 
-        d6 = F.upsample(d6,scale_factor=2,mode='bilinear')
-        d7 = torch.cat([self.deconv6(d6),conv3],1)
+        d6 = F.upsample(d6, scale_factor=2, mode='bilinear')
+        d7 = torch.cat([self.deconv6(d6), conv3], 1)
         d7 = self.conv7(d7)
 
-        d7 = F.upsample(d7,scale_factor=2,mode='bilinear')
-        d8 = torch.cat([self.deconv7(d7),conv2],1)
+        d7 = F.upsample(d7, scale_factor=2, mode='bilinear')
+        d8 = torch.cat([self.deconv7(d7), conv2], 1)
         d8 = self.conv8(d8)
 
-        d8 = F.upsample(d8,scale_factor=2,mode='bilinear')
-        d9 = torch.cat([self.deconv8(d8),conv1],1)
+        d8 = F.upsample(d8, scale_factor=2, mode='bilinear')
+        d9 = torch.cat([self.deconv8(d8), conv1], 1)
         d9 = self.conv9(d9)
 
         latent = self.conv10(d9)
@@ -489,15 +497,18 @@ class Unet_resize_conv(nn.Module):
                 if self.opt.latent_threshold:
                     latent = F.relu(latent)
                 elif self.opt.latent_norm:
-                    latent = (latent - torch.min(latent)) / (torch.max(latent) - torch.min(latent))
-                input = (input - torch.min(input)) / (torch.max(input) - torch.min(input))
+                    latent = (latent - torch.min(latent)) / \
+                        (torch.max(latent) - torch.min(latent))
+                input = (input - torch.min(input)) / \
+                    (torch.max(input) - torch.min(input))
                 output = latent + input * self.opt.skip
                 output = output * 2 - 1
             else:
                 if self.opt.latent_threshold:
                     latent = F.relu(latent)
                 elif self.opt.latent_norm:
-                    latent = (latent - torch.min(latent)) / (torch.max(latent) - torch.min(latent))
+                    latent = (latent - torch.min(latent)) / \
+                        (torch.max(latent) - torch.min(latent))
                 output = latent + input * self.opt.skip  # resnet
         else:
             output = latent
@@ -506,8 +517,10 @@ class Unet_resize_conv(nn.Module):
             output = output / torch.max(torch.abs(output))
 
         # 做切割
-        output = pad_tensor_back(output, pad_left, pad_right, pad_top, pad_bottom)
-        latent = pad_tensor_back(latent, pad_left, pad_right, pad_top, pad_bottom)
+        output = pad_tensor_back(
+            output, pad_left, pad_right, pad_top, pad_bottom)
+        latent = pad_tensor_back(
+            latent, pad_left, pad_right, pad_top, pad_bottom)
 
         if flag == 1:
             output = F.upsample(output, scale_factor=2, mode='bilinear')

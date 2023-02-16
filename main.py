@@ -6,10 +6,12 @@ from opts.train_opt import TrainOptions
 from util.dataLoader import CreateDataLoader
 from models import model
 
+
 def get_config(config):
     import yaml
     with open(config, 'r') as stream:
         return yaml.safe_load(stream)
+
 
 if __name__ == '__main__':
     opt = TrainOptions().parse()
@@ -24,14 +26,14 @@ if __name__ == '__main__':
         epoch_start_time = time.time()
         for i, data in enumerate(dataset):
             iter_start_time = time.time()
-            total_steps += opt.batchSize
+            total_steps += opt.batchsize
             epoch_iter = total_steps - dataset_size * (epoch - 1)
             model.set_input(data)
-            model.optimize_parameters(epoch)
-
+            model.optimize_parameter(epoch)
 
             if total_steps % opt.print_freq == 0:
                 errors = model.get_current_error(epoch)
+                print(errors, "\n")
                 t = (time.time() - iter_start_time) / opt.batchsize
 
             if total_steps % opt.save_latest_freq == 0:
@@ -56,11 +58,8 @@ if __name__ == '__main__':
             elif epoch == (opt.niter + 70):
                 model.update_learning_rate()
             elif epoch == (opt.niter + 90):
-                model.update_learning_rate() #
+                model.update_learning_rate()
         else:
             if epoch > opt.niter:
                 model.update_learning_rate()
-
-
-
 
