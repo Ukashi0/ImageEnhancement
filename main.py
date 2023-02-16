@@ -31,8 +31,8 @@ if __name__ == '__main__':
 
 
             if total_steps % opt.print_freq == 0:
-                errors = model.get_current_errors(epoch)
-                t = (time.time() - iter_start_time) / opt.batchSize
+                errors = model.get_current_error(epoch)
+                t = (time.time() - iter_start_time) / opt.batchsize
 
             if total_steps % opt.save_latest_freq == 0:
                 print('saving the latest model (epoch %d, total_steps %d)' %
@@ -57,9 +57,6 @@ if __name__ == '__main__':
                 model.update_learning_rate()
             elif epoch == (opt.niter + 90):
                 model.update_learning_rate() #
-                model.update_learning_rate()
-                model.update_learning_rate()
-                model.update_learning_rate()
         else:
             if epoch > opt.niter:
                 model.update_learning_rate()

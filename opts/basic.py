@@ -61,7 +61,7 @@ class BaseOptions():
         self.parser.add_argument('--use_norm', type=float, default=1, help='L1 loss weight is 10.0')
         self.parser.add_argument('--use_wgan', type=float, default=0, help='use wgan-gp')
         self.parser.add_argument('--use_ragan', action='store_true', help='use ragan')
-        self.parser.add_argument('--vgg', type=float, default=0, help='use perceptrual loss')
+        self.parser.add_argument('--vgg', type=float, default=1, help='use perceptrual loss')
         self.parser.add_argument('--vgg_mean', action='store_true', help='substract mean in vgg loss')
         self.parser.add_argument('--vgg_choose', type=str, default='relu5_3', help='choose layer for vgg')
         self.parser.add_argument('--no_vgg_instance', action='store_true', help='vgg instance normalization')

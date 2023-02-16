@@ -222,11 +222,6 @@ class PerceptualLoss(nn.Module):
         # normalize
         return torch.mean((self.instancenorm(img_fea) - self.instancenorm(target_fea)) ** 2)
 
-class GANLoss(nn.Module):
-    def __init__(self, use_lsgan=True, target_real=1.0, target_fake=0.0, tensor=torch.FloatTensor):
-        super(GANLoss, self).__init__()
-        self.real_label = target_real
-        self.fake_label
 
 
 class GANLoss(nn.Module):
@@ -251,14 +246,14 @@ class GANLoss(nn.Module):
             if create_label:
                 real_tensor = self.Tensor(input.size()).fill_(self.real_label)
                 self.real_label_var = Variable(real_tensor, requires_grad=False)
-            target_tensor = self.real_label_var
+            target_tensor = self.real_label_var.cuda()
         else:
             create_label = ((self.fake_label_var is None) or
                             (self.fake_label_var.numel() != input.numel()))
             if create_label:
                 fake_tensor = self.Tensor(input.size()).fill_(self.fake_label)
                 self.fake_label_var = Variable(fake_tensor, requires_grad=False)
-            target_tensor = self.fake_label_var
+            target_tensor = self.fake_label_var.cuda()
         return target_tensor
 
     def __call__(self, input, target_is_real):
@@ -470,19 +465,19 @@ class Unet_resize_conv(nn.Module):
         x5 = self.conv5(x5)
 
         d5 = F.upsample(x5, scale_factor=2,mode='bilinear')
-        d6 = torch.concat([self.deconv5(d5),conv4],1)
+        d6 = torch.cat([self.deconv5(d5),conv4],1)
         d6  = self.conv6(d6)
 
         d6 = F.upsample(d6,scale_factor=2,mode='bilinear')
-        d7 = torch.concat([self.deconv6(d6),conv3],1)
+        d7 = torch.cat([self.deconv6(d6),conv3],1)
         d7 = self.conv7(d7)
 
         d7 = F.upsample(d7,scale_factor=2,mode='bilinear')
-        d8 = torch.concat([self.deconv7(d7),conv2],1)
+        d8 = torch.cat([self.deconv7(d7),conv2],1)
         d8 = self.conv8(d8)
 
         d8 = F.upsample(d8,scale_factor=2,mode='bilinear')
-        d9 = torch.concat([self.deconv8(d8),conv1],1)
+        d9 = torch.cat([self.deconv8(d8),conv1],1)
         d9 = self.conv9(d9)
 
         latent = self.conv10(d9)
