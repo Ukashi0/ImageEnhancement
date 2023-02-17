@@ -55,11 +55,11 @@ class GanModel(BaseModel):
                                                 opt.n_layers_patchD, opt.norm, use_sigmoid, self.gpu_id, True)
         if not self.isTrain or opt.continue_train:
             which_epoch = opt.which_epoch
-            self.load_network(self.netG_A, 'G_A', which_epoch)
+            self.load_net(self.netG_A, 'G_A', which_epoch)
             if self.isTrain:
-                self.load_network(self.netD_A, 'D_A', which_epoch)
+                self.load_net(self.netD_A, 'D_A', which_epoch)
                 if self.opt.patchD:
-                    self.load_network(self.netD_P, 'D_P', which_epoch)
+                    self.load_net(self.netD_P, 'D_P', which_epoch)
 
         if self.isTrain:
             self.old_lr = opt.lr
@@ -270,11 +270,8 @@ class GanModel(BaseModel):
         self.save_net(self.netD_P, 'D_P', label, self.gpu_id)
 
     def update_lr(self):
-        if self.opt.new_lf:
-            lr = self.old_lr / 2
-        else:
-            lrd = self.opt.lr / self.opt.niter_decay
-            lr = self.old_lr - lrd
+        lrd = self.opt.lr / self.opt.niter_decay
+        lr = self.old_lr - lrd
         for item in self.optimizer_D_A.param_groups:
             item['lr'] = lr
         for item in self.optimizer_D_P.param_groups:

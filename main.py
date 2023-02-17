@@ -52,14 +52,14 @@ if __name__ == '__main__':
 
         if opt.new_lr:
             if epoch == opt.niter:
-                model.update_learning_rate()
+                model.update_lr()
             elif epoch == (opt.niter + 20):
-                model.update_learning_rate()
+                model.update_lr()
             elif epoch == (opt.niter + 70):
-                model.update_learning_rate()
+                model.update_lr()
             elif epoch == (opt.niter + 90):
-                model.update_learning_rate()
+                model.update_lr()
         else:
             if epoch > opt.niter:
-                model.update_learning_rate()
+                model.update_lr()
 
