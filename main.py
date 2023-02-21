@@ -33,7 +33,7 @@ if __name__ == '__main__':
 
             if total_steps % opt.print_freq == 0:
                 errors = model.get_current_error(epoch)
-                print(errors, "\n")
+                # print(errors, "\n")
                 t = (time.time() - iter_start_time) / opt.batchsize
 
             if total_steps % opt.save_latest_freq == 0:

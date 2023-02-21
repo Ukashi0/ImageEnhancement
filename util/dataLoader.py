@@ -38,7 +38,8 @@ class dataLoader(BaseDataLoader):
         self.dataset = CreateDataset(opt)
         self.dataloader = torch.utils.data.DataLoader(
             self.dataset,   # torch TensorDataset format
-            batch_size=opt.batchsize,   # mini batch size
+            # batch_size=opt.batchsize,   # mini batch size
+            batch_size = 8,
             shuffle=not opt.serial_batches,   # 是否打乱数据
             num_workers=int(opt.nThreads))  # # 多线程读数据
 

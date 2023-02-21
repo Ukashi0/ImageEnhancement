@@ -13,7 +13,7 @@ class BaseOptions():
     def initialize(self):
         self.parser.add_argument('--dataroot', default='./dataset/')
         self.parser.add_argument(
-            '--batchsize', type=int, default=1, help='input batch size')
+            '--batchsize', type=int, default=32, help='input batch size')
         self.parser.add_argument(
             '--loadsize', type=int, default=286, help='scale images to this size')
         self.parser.add_argument(
@@ -77,7 +77,7 @@ class BaseOptions():
         self.parser.add_argument('--no_flip', action='store_true',
                                  help='if specified, do not flip the images for data augmentation')
         self.parser.add_argument(
-            '--skip', type=float, default=1.0, help='B = net.forward(A) + skip*A')
+            '--skip', type=float, default=0.8, help='B = net.forward(A) + skip*A')
         self.parser.add_argument(
             '--use_mse', action='store_true', help='MSELoss')
         self.parser.add_argument(

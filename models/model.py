@@ -9,6 +9,7 @@ import itertools
 from util.imagePool import ImagePool
 from .baseModel import BaseModel
 from . import networks
+from PIL import Image
 
 
 class GanModel(BaseModel):
@@ -133,9 +134,11 @@ class GanModel(BaseModel):
         if self.opt.skip == 1:
             self.fakeB, self.latentRealA = self.netG_A.forward(self.realA)
         else:
-            self.fakeB = self.netG_A.forward(self.realA)
+            self.fakeB, self.latent_real_A = self.netG_A.forward(self.realA)
         realA = util.tensor2im(self.realA.data)
         fakeB = util.tensor2im(self.fakeB.data)
+        # 保存图片
+        # Image.SAVE
         return OrderedDict([('realA', realA), ('fakeB', fakeB)])
 
     def get_image_paths(self):

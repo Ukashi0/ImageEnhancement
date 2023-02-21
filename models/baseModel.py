@@ -49,5 +49,5 @@ class BaseModel():
         save_path = os.path.join(self.save_dir, save_filename)
         net.load_state_dict(torch.load(save_path), strict=False)
 
-    def update_learning_rate():
+    def update_learning_rate(self):
         pass
